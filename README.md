@@ -11,6 +11,9 @@ SpotMe Workout App
 * run `npm install`
 * run `npm start`
 
+#### MongoDB setup.
+* after installing create a folder c:\data\db
+
 #### Frontend mods before you run
 * edit 'ionic.config.json'. Change the 'Proxy Url' to the backend server address
 * edit 'controllers\constants.js'. Change the 'url' to the backend server address
