@@ -67,6 +67,9 @@ var UserSchema = new Schema({
     },
     goalWeight: {
       type: Number
+    },
+    genderPreference: {
+      type: String
     }
   },
   matches: {

@@ -77,6 +77,7 @@ apiRoutes.put('/accountInfo', function(req, res) {
       user.fitnessGoals.workoutTime = req.body.workoutTime;
       user.fitnessGoals.fitnessLevel = req.body.fitnessLevel;
       user.fitnessGoals.goalWeight = req.body.goalWeight;
+      user.fitnessGoals.genderPreference = req.body.genderPreference;
 
       user.save();
       return res.json({success: true, msg: 'update succesfull' + user});
@@ -129,7 +130,77 @@ apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), fu
     return res.status(403).send({success: false, msg: 'No token provided.'});
   }
 });
- 
+
+// Get the list of good matches. TEST ONLY
+apiRoutes.post('/getMatches', function(req, res) {
+  console.log(req.body);
+  User.findOne({
+    name: req.body.name
+  }, function(err, user) {
+    if (err) throw err;
+
+    if (!user) {
+      return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+    } else {
+      /////////
+      console.log("retrieved user" + user);
+      User.find({
+        "name": {"$ne": user.name},
+        "$and": [{"fitnessGoals.genderPreference": user.genderPreference},
+        {"userInfo.schoolInfo.school": user.userInfo.schoolInfo.school},
+          {"fitnessGoals.workoutTime": user.fitnessGoals.workoutTime}
+        ]
+      }, function(err, user) {
+        if (err) throw err;
+
+        if (!user) {
+          return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+        } else {
+          // Get the match list and return it to the user
+          res.json({success: true, msg: 'Welcome in the member area \n' + user});
+        }
+      });
+      ////////
+      // Get the match list and return it to the user
+      // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+    }
+  });
+});
+
+
+/*// Get the list of good matches
+apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    var decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+      if (err) throw err;
+
+      if (!user) {
+        return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        // Get the match list and return it to the user
+        User.find({
+          "$and": [
+            "name": {"$ne": user.name},
+            "fitnessGoals.genderPreference": user.genderPreference,
+            "schoolInfo.school": user.schoolInfo.school,
+            "fitnessGoals.workoutTime": user.fitnessGoals.workoutTime
+          ]
+        }, function (err, response) {
+          if (err) throw err;
+          else res.json({success: true, msg:response})
+        });
+        res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+      }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+});*/
+
 getToken = function (headers) {
   if (headers && headers.authorization) {
     var parted = headers.authorization.split(' ');
