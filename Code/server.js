@@ -10,7 +10,7 @@ var port        = process.env.PORT || 8080;
 var jwt         = require('jwt-simple');
  
 // get our request parameters
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
  
 // log to console
@@ -48,6 +48,38 @@ apiRoutes.post('/signup', function(req, res) {
         return res.json({success: false, msg: 'Username already exists.'});
       }
       res.json({success: true, msg: 'Successful created new user.'});
+    });
+  }
+});
+
+// update user info (upon user creation). Change later to look for user token
+apiRoutes.put('/accountInfo', function(req, res) {
+  console.log(req.body);
+  if (!req.body.name || !req.body.password) {
+    res.json({success: false, msg: 'Please pass name and password.'});
+  } else {
+    User.findOne(req.body.name, function (err, user) {
+      if (err) return res.json({success: false, msg: 'update failed'});
+      // user.userInfo.firstName = req.body.userInfo.firstName;
+      // user.userInfo.lastName = req.body.userInfo.lastName;
+      user.userInfo.firstName = req.body.firstName;
+      user.userInfo.lastName = req.body.lastName;
+      user.userInfo.bio = req.body.bio;
+      user.userInfo.height.feet = req.body.feet;
+      user.userInfo.height.inches = req.body.inches;
+      user.userInfo.weight = req.body.weight;
+      user.userInfo.gender = req.body.gender;
+      user.userInfo.dateOfBirth = req.body.dateOfBirth;
+      user.userInfo.schoolInfo.school = req.body.school;
+      user.userInfo.schoolInfo.grade = req.body.grade;
+
+      user.fitnessGoals.personal = req.body.personalGoal;
+      user.fitnessGoals.workoutTime = req.body.workoutTime;
+      user.fitnessGoals.fitnessLevel = req.body.fitnessLevel;
+      user.fitnessGoals.goalWeight = req.body.goalWeight;
+
+      user.save();
+      return res.json({success: true, msg: 'update succesfull' + user});
     });
   }
 });

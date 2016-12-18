@@ -7,14 +7,79 @@ var bcrypt = require('bcryptjs');
 // set up a mongoose model
 var UserSchema = new Schema({
   name: {
-        type: String,
-        unique: true,
-        required: true
-    },
+      type: String,
+      unique: true,
+      required: true
+  },
   password: {
-        type: String,
-        required: true
+      type: String,
+      required: true
+  },
+
+  userInfo: {
+    firstName: {
+      type: String
+    },
+    lastName: {
+      type: String
+    },
+    bio: {
+      type: String
+    },
+    height: {
+      feet: {
+        type: Number
+      },
+      inches: {
+        type: Number
+      }
+    },
+    weight: {
+      type: Number
+    },
+    gender: {
+      type: String
+    },
+    dateOfBirth: {
+      type: Date
+    },
+    schoolInfo: {
+      school: {
+        type: String
+      },
+      grade: {
+        type: String
+      }
+    },
+    photos: { // placeholder for images
+      type: String
     }
+  },
+  fitnessGoals: {
+    personal: {
+      type: String
+    },
+    workoutTime: {
+      type: String
+    },
+    fitnessLevel: {
+      type: String
+    },
+    goalWeight: {
+      type: Number
+    }
+  },
+  matches: {
+    accepted: {
+      type: String
+    },
+    passed: {
+      type: [String]
+    },
+    blocked: {
+      type: [String]
+    }
+  }
 });
  
 UserSchema.pre('save', function (next) {
