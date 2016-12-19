@@ -40,8 +40,8 @@ var UserSchema = new Schema({
     gender: {
       type: String
     },
-    dateOfBirth: {
-      type: Date
+    age: {
+      type: Number
     },
     schoolInfo: {
       school: {

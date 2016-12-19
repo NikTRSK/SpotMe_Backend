@@ -8,7 +8,9 @@ var config      = require('./config/database'); // get db config file
 var User        = require('./app/models/user'); // get the mongoose model
 var port        = process.env.PORT || 8080;
 var jwt         = require('jwt-simple');
- 
+// added to fix cors issue
+var cors        = require('cors');
+
 // get our request parameters
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -18,7 +20,11 @@ app.use(morgan('dev'));
  
 // Use the passport package in our application
 app.use(passport.initialize());
- 
+
+// to fix cors issue
+app.use(cors());
+/////////////
+
 // demo Route (GET http://localhost:8080)
 app.get('/', function(req, res) {
   res.send('Hello! The API is at http://localhost:' + port + '/api');
@@ -69,7 +75,7 @@ apiRoutes.put('/accountInfo', function(req, res) {
       user.userInfo.height.inches = req.body.inches;
       user.userInfo.weight = req.body.weight;
       user.userInfo.gender = req.body.gender;
-      user.userInfo.dateOfBirth = req.body.dateOfBirth;
+      user.userInfo.age = req.body.age;
       user.userInfo.schoolInfo.school = req.body.school;
       user.userInfo.schoolInfo.grade = req.body.grade;
 
