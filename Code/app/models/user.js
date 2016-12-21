@@ -27,12 +27,7 @@ var UserSchema = new Schema({
       type: String
     },
     height: {
-      feet: {
-        type: Number
-      },
-      inches: {
-        type: Number
-      }
+      type: Number
     },
     weight: {
       type: Number

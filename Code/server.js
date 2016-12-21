@@ -59,35 +59,59 @@ apiRoutes.post('/signup', function(req, res) {
 });
 
 // update user info (upon user creation). Change later to look for user token
-apiRoutes.put('/accountInfo', function(req, res) {
-  console.log(req.body);
-  if (!req.body.name || !req.body.password) {
-    res.json({success: false, msg: 'Please pass name and password.'});
-  } else {
-    User.findOne(req.body.name, function (err, user) {
-      if (err) return res.json({success: false, msg: 'update failed'});
-      // user.userInfo.firstName = req.body.userInfo.firstName;
-      // user.userInfo.lastName = req.body.userInfo.lastName;
-      user.userInfo.firstName = req.body.firstName;
-      user.userInfo.lastName = req.body.lastName;
-      user.userInfo.bio = req.body.bio;
-      user.userInfo.height.feet = req.body.feet;
-      user.userInfo.height.inches = req.body.inches;
-      user.userInfo.weight = req.body.weight;
-      user.userInfo.gender = req.body.gender;
-      user.userInfo.age = req.body.age;
-      user.userInfo.schoolInfo.school = req.body.school;
-      user.userInfo.schoolInfo.grade = req.body.grade;
+apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    var decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+      if (err) throw err;
 
-      user.fitnessGoals.personal = req.body.personalGoal;
-      user.fitnessGoals.workoutTime = req.body.workoutTime;
-      user.fitnessGoals.fitnessLevel = req.body.fitnessLevel;
-      user.fitnessGoals.goalWeight = req.body.goalWeight;
-      user.fitnessGoals.genderPreference = req.body.genderPreference;
+      if (!user) {
+        return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+        if (req.body.firstName != null)
+          user.userInfo.firstName = req.body.firstName;
+        if (req.body.lastName != null)
+          user.userInfo.lastName = req.body.lastName;
+        if (req.body.bio != null)
+          user.userInfo.bio = req.body.bio;
+        if (req.body.height != null)
+          user.userInfo.height = req.body.height;
+        if (req.body.weight != null)
+          user.userInfo.weight = req.body.weight;
+        if (req.body.gender != null)
+          user.userInfo.gender = req.body.gender;
+        if (req.body.age != null)
+          user.userInfo.age = req.body.age;
+        if (req.body.school != null)
+          user.userInfo.schoolInfo.school = req.body.school;
+        // user.userInfo.schoolInfo.grade = req.body.grade;
 
-      user.save();
-      return res.json({success: true, msg: 'update succesfull' + user});
+        if (req.body.personalGoal != null)
+          user.fitnessGoals.personal = req.body.personalGoal;
+        if (req.body.workoutTime != null)
+          user.fitnessGoals.workoutTime = req.body.workoutTime;
+        if (req.body.fitnessLevel != null)
+          user.fitnessGoals.fitnessLevel = req.body.fitnessLevel;
+        if (req.body.goalWeight != null)
+          user.fitnessGoals.goalWeight = req.body.goalWeight;
+        if (req.body.genderPreference != null)
+          user.fitnessGoals.genderPreference = req.body.genderPreference;
+
+        // user.save();
+        user.save(function(err) {
+          if (err)
+            return res.send(err);
+
+          return res.json({success: true, msg: 'update succesfull' + user});
+        });
+      }
     });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
   }
 });
 
@@ -138,6 +162,40 @@ apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), fu
 });
 
 // Get the list of good matches. TEST ONLY
+apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    var decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+      if (err) throw err;
+
+      if (!user) {
+        return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        // get all the users that match the same settings as the user
+        console.log("Finding matches for " + user.name);
+        User.find({
+          "name": {"$ne": user.name},
+          "$and": [{"fitnessGoals.genderPreference": user.genderPreference},
+            {"userInfo.schoolInfo.school": user.userInfo.schoolInfo.school},
+            {"fitnessGoals.workoutTime": user.fitnessGoals.workoutTime}
+          ]
+        }, {"name":1,_id:0}, function(err, users) {
+          if (err) throw err;
+
+          return res.json(users);
+        });
+      }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+});
+
+
+
 apiRoutes.post('/getMatches', function(req, res) {
   console.log(req.body);
   User.findOne({
@@ -172,6 +230,8 @@ apiRoutes.post('/getMatches', function(req, res) {
     }
   });
 });
+
+
 
 
 /*// Get the list of good matches
