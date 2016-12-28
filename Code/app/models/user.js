@@ -47,7 +47,8 @@ var UserSchema = new Schema({
       }
     },
     photos: { // placeholder for images
-      type: String
+      data: Buffer,
+      contentType: String
     }
   },
   fitnessGoals: {

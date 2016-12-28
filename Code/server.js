@@ -10,6 +10,9 @@ var port        = process.env.PORT || 8080;
 var jwt         = require('jwt-simple');
 // added to fix cors issue
 var cors        = require('cors');
+// handling image uploads
+var fs = require('fs');
+var multer = require('multer');
 
 // get our request parameters
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -21,6 +24,15 @@ app.use(morgan('dev'));
 // Use the passport package in our application
 app.use(passport.initialize());
 
+// Setup for image uploads
+// app.use(multer({ dest: './data/img/',
+//   rename: function (fieldname, filename) {
+//     return filename;
+//   }
+// }));
+
+app.use(multer({dest:'./data/img/'}).single('photo'));
+// var upload = multer({dest:'./data/img/'});
 // to fix cors issue
 app.use(cors());
 /////////////
@@ -114,6 +126,71 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
     return res.status(403).send({success: false, msg: 'No token provided.'});
   }
 });
+
+/*// Handle image uploads
+apiRoutes.put('/setphoto', passport.authenticate('jwt', { session: false}), function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    var decoded = jwt.decode(token, config.secret);
+    User.findOne({
+      name: decoded.name
+    }, function(err, user) {
+      if (err) throw err;
+
+      if (!user) {
+        return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+        if (req.body.photo != null) {
+          user.userInfo.photos = fs.readFileSync(req.files.userPhoto.path);
+          user.userInfo.photos.contentType = 'image/jpg';
+
+        // user.save();
+        user.save(function(err) {
+          if (err)
+            return res.send(err);
+
+          return res.json({success: true, msg: 'image update succesfull' + user});
+        });
+      }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
+});*/
+// Handle image uploads
+apiRoutes.put('/setphoto', function(req, res) {
+  // console.log(req.body);
+  //
+  console.log(req.file);
+
+  User.findOne({
+    name: req.body.name
+  }, function (err, user) {
+    // console.log(user);
+    if (err) throw err;
+
+    if (!user) {
+      return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+    } else {
+      // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+      // if (req.body.photo != null) {
+        user.userInfo.photos.data = fs.readFileSync(req.file.path);
+        user.userInfo.photos.contentType = 'image/jpg';
+
+        console.log(user);
+        // user.save();
+        user.save(function (err) {
+          if (err)
+            return res.send(err);
+
+          return res.json({success: true, msg: 'image update succesfull' + user});
+        });
+      // }
+    }
+  });
+});
+
 
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', function(req, res) {
