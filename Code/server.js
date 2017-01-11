@@ -239,10 +239,11 @@ apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), fu
 });
 
 // Get the list of good matches. TEST ONLY
-apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
+apiRoutes.put('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
   var token = getToken(req.headers);
   if (token) {
     var decoded = jwt.decode(token, config.secret);
+    console.log(decoded.user);
     User.findOne({
       name: decoded.name
     }, function(err, user) {
@@ -261,7 +262,6 @@ apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), fu
           ]
         }, {"name":1,_id:0}, function(err, users) {
           if (err) throw err;
-
           return res.json(users);
         });
       }
@@ -288,19 +288,20 @@ apiRoutes.post('/getMatches', function(req, res) {
       User.find({
         "name": {"$ne": user.name},
         "$and": [{"fitnessGoals.genderPreference": user.genderPreference},
-        {"userInfo.schoolInfo.school": user.userInfo.schoolInfo.school},
+          {"userInfo.schoolInfo.school": user.userInfo.schoolInfo.school},
           {"fitnessGoals.workoutTime": user.fitnessGoals.workoutTime}
         ]
-      }, function(err, user) {
+      }, {"name":1,_id:0}, function(err, users) {
         if (err) throw err;
-
-        if (!user) {
-          return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-        } else {
-          // Get the match list and return it to the user
-          res.json({success: true, msg: 'Welcome in the member area \n' + user});
-        }
+        return res.json(users);
       });
+
+        // if (!user) {
+        //   return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
+        // } else {
+        //   // Get the match list and return it to the user
+        //   res.json({success: true, msg: 'Welcome in the member area \n' + user});
+        // }
       ////////
       // Get the match list and return it to the user
       // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
