@@ -60,12 +60,16 @@ apiRoutes.post('/signup', function(req, res) {
       name: req.body.name,
       password: req.body.password
     });
-    // save the user
-    newUser.save(function(err) {
-      if (err) {
-        return res.json({success: false, msg: 'Username already exists.'});
-      }
-      res.json({success: true, msg: 'Successful created new user.'});
+
+    User.getFirstEntry(function (err, id) {
+      newUser.lastViewedUser = id._id;
+      // save the user
+      newUser.save(function(err) {
+        if (err) {
+          return res.json({success: false, msg: 'Username already exists.'});
+        }
+        res.json({success: true, msg: 'Successful created new user.'});
+      });
     });
   }
 });
@@ -113,6 +117,8 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
         if (req.body.genderPreference != null)
           user.fitnessGoals.genderPreference = req.body.genderPreference;
 
+        console.log("ORIGINAL: " + req.body + " 1: " + req.body.workoutTime + " 2: " + req.body.genderPreference);
+        console.log("MYUSER: " + user);
         // user.save();
         user.save(function(err) {
           if (err)
@@ -285,6 +291,37 @@ apiRoutes.post('/getMatches', function(req, res) {
     } else {
       /////////
       console.log("retrieved user" + user);
+
+      User.findOne({
+        "name" : "user.name"
+      }, {"lastViewedUser":1}, function (err, result) {
+        if (err)
+          throw err;
+        var lastViewed;
+        console.log("lastViewed: " + result);
+        while(
+        lastViewed = User.findOne({
+          "_id": "result.lastViewedUser+1"
+        }, function (err, nextUser) {
+          if (err)
+            throw err;
+          if (nextUser) {
+            if (!nextUser) return;
+            console.log("next USER: " + nextUser);
+            // retrieve matches and create array with users
+            if (
+              nextUser.fitnessGoals.genderPreference == user.genderPreference &&
+              nextUser.userInfo.schoolInfo.school == user.userInfo.schoolInfo.school &&
+              nextUser.fitnessGoals.workoutTime == user.fitnessGoals.workoutTime
+            ) {
+              return nextUser;
+            }
+          }
+        })
+        );
+        // while()
+      });
+
       User.find({
         "name": {"$ne": user.name},
         "$and": [{"fitnessGoals.genderPreference": user.genderPreference},
@@ -312,7 +349,7 @@ apiRoutes.post('/getMatches', function(req, res) {
 
 
 
-/*// Get the list of good matches
+// Get the list of good matches
 apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
   var token = getToken(req.headers);
   if (token) {
@@ -326,24 +363,24 @@ apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), fu
         return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
       } else {
         // Get the match list and return it to the user
-        User.find({
-          "$and": [
-            "name": {"$ne": user.name},
-            "fitnessGoals.genderPreference": user.genderPreference,
-            "schoolInfo.school": user.schoolInfo.school,
-            "fitnessGoals.workoutTime": user.fitnessGoals.workoutTime
-          ]
-        }, function (err, response) {
-          if (err) throw err;
-          else res.json({success: true, msg:response})
-        });
+        // User.find({
+        //   "$and": [
+        //     "name": {"$ne": user.name},
+        //     "fitnessGoals.genderPreference": user.genderPreference,
+        //     "schoolInfo.school": user.schoolInfo.school,
+        //     "fitnessGoals.workoutTime": user.fitnessGoals.workoutTime
+        //   ]
+        // }, function (err, response) {
+        //   if (err) throw err;
+        //   else res.json({success: true, msg:response})
+        // });
         res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
       }
     });
   } else {
     return res.status(403).send({success: false, msg: 'No token provided.'});
   }
-});*/
+});
 
 getToken = function (headers) {
   if (headers && headers.authorization) {
