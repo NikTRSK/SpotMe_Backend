@@ -117,14 +117,14 @@ UserSchema.statics.getFirstEntry = function(cb) {
   var model = this.model("User");
   model.findOne({}, {"_id" : 1}).exec(function(err, user) {
     if (err) return cb(err);
-
+    // console.log("FIRST:" + user);
     if (user) {
       cb(null, user);
     } else {
-      // If quote is null, we've wrapped around.
+      // If user is null, we've wrapped around.
       model.findOne(cb);
     }
   });
 };
- 
+
 module.exports = mongoose.model('User', UserSchema);

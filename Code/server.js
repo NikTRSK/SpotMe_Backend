@@ -13,6 +13,7 @@ var cors        = require('cors');
 // handling image uploads
 var fs = require('fs');
 var multer = require('multer');
+var co = require('co');
 
 // get our request parameters
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -62,6 +63,7 @@ apiRoutes.post('/signup', function(req, res) {
     });
 
     User.getFirstEntry(function (err, id) {
+      console.log(id);
       newUser.lastViewedUser = id._id;
       // save the user
       newUser.save(function(err) {
@@ -281,74 +283,29 @@ apiRoutes.put('/getMatches', passport.authenticate('jwt', { session: false}), fu
 
 apiRoutes.post('/getMatches', function(req, res) {
   console.log(req.body);
-  User.findOne({
-    name: req.body.name
-  }, function(err, user) {
-    if (err) throw err;
 
-    if (!user) {
-      return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-    } else {
-      /////////
-      console.log("retrieved user" + user);
-
-      User.findOne({
-        "name" : "user.name"
-      }, {"lastViewedUser":1}, function (err, result) {
-        if (err)
-          throw err;
-        var lastViewed;
-        console.log("lastViewed: " + result);
-        while(
-        lastViewed = User.findOne({
-          "_id": "result.lastViewedUser+1"
-        }, function (err, nextUser) {
-          if (err)
-            throw err;
-          if (nextUser) {
-            if (!nextUser) return;
-            console.log("next USER: " + nextUser);
-            // retrieve matches and create array with users
-            if (
-              nextUser.fitnessGoals.genderPreference == user.genderPreference &&
-              nextUser.userInfo.schoolInfo.school == user.userInfo.schoolInfo.school &&
-              nextUser.fitnessGoals.workoutTime == user.fitnessGoals.workoutTime
-            ) {
-              return nextUser;
-            }
-          }
-        })
-        );
-        // while()
-      });
-
-      User.find({
-        "name": {"$ne": user.name},
-        "$and": [{"fitnessGoals.genderPreference": user.genderPreference},
-          {"userInfo.schoolInfo.school": user.userInfo.schoolInfo.school},
-          {"fitnessGoals.workoutTime": user.fitnessGoals.workoutTime}
-        ]
-      }, {"name":1,_id:0}, function(err, users) {
-        if (err) throw err;
-        return res.json(users);
-      });
-
-        // if (!user) {
-        //   return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-        // } else {
-        //   // Get the match list and return it to the user
-        //   res.json({success: true, msg: 'Welcome in the member area \n' + user});
-        // }
-      ////////
-      // Get the match list and return it to the user
-      // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
-    }
+  // Find a match and return it
+  let currentUser = User.findOne({name: req.body.name});
+  currentUser.then(function(result) {
+    co(function*() {
+      const cursor = User.find({ _id : {$gte: result.lastViewedUser} }).cursor();
+      for (let nextUser = yield cursor.next(); nextUser != null; nextUser = yield cursor.next()) {
+        // Print the user, with the `band` field populated
+        console.log(nextUser);
+        if (
+          nextUser.genderPreference === result.genderPreference &&
+          nextUser.userInfo.schoolInfo.school === result.userInfo.schoolInfo.school &&
+          nextUser.fitnessGoals.workoutTime === result.fitnessGoals.workoutTime
+        )
+          return res.json(nextUser);
+      }
+    });
   });
 });
 
 
 
-
+/*TAKE THIS OUT*/
 // Get the list of good matches
 apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), function(req, res) {
   var token = getToken(req.headers);
@@ -393,6 +350,14 @@ getToken = function (headers) {
   } else {
     return null;
   }
+};
+
+compareUsers = function(user, nextUser) {
+  return (
+    nextUser.fitnessGoals.genderPreference == user.genderPreference &&
+    nextUser.userInfo.schoolInfo.school == user.userInfo.schoolInfo.school &&
+    nextUser.fitnessGoals.workoutTime == user.fitnessGoals.workoutTime
+  );
 };
 
 // connect the api routes under /api/*
