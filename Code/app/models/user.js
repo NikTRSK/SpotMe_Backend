@@ -72,15 +72,20 @@ var UserSchema = new Schema({
     }
   },
   matches: {
-    accepted: {
-      type: String
-    },
-    passed: {
-      type: [String]
-    },
-    blocked: {
-      type: [String]
-    }
+    accepted: [{
+      id: Schema.Types.ObjectId,
+      messages : [{
+        conversationID : Schema.Types.ObjectId,
+        author: String,
+        body: String
+      }]
+    }],
+    passed: [{
+      id: Schema.Types.ObjectId
+    }],
+    blocked: [{
+      id: Schema.Types.ObjectId
+    }]
   }
 });
 

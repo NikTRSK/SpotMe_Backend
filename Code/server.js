@@ -1,19 +1,19 @@
-var express     = require('express');
-var app         = express();
-var bodyParser  = require('body-parser');
-var morgan      = require('morgan');
-var mongoose    = require('mongoose');
-var passport  = require('passport');
-var config      = require('./config/database'); // get db config file
-var User        = require('./app/models/user'); // get the mongoose model
-var port        = process.env.PORT || 8080;
-var jwt         = require('jwt-simple');
+let express     = require('express');
+let app         = express();
+let bodyParser  = require('body-parser');
+let morgan      = require('morgan');
+let mongoose    = require('mongoose');
+let passport  = require('passport');
+let config      = require('./config/database'); // get db config file
+let User        = require('./app/models/user'); // get the mongoose model
+let port        = process.env.PORT || 8080;
+let jwt         = require('jwt-simple');
 // added to fix cors issue
-var cors        = require('cors');
+let cors        = require('cors');
 // handling image uploads
-var fs = require('fs');
-var multer = require('multer');
-var co = require('co');
+let fs = require('fs');
+let multer = require('multer');
+let co = require('co');
 
 // get our request parameters
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -281,7 +281,7 @@ apiRoutes.put('/getMatches', passport.authenticate('jwt', { session: false}), fu
 
 
 
-apiRoutes.post('/getMatches', function(req, res) {
+apiRoutes.post('/getMatch', function(req, res) {
   console.log(req.body);
 
   // Find a match and return it
@@ -296,14 +296,90 @@ apiRoutes.post('/getMatches', function(req, res) {
           nextUser.genderPreference === result.genderPreference &&
           nextUser.userInfo.schoolInfo.school === result.userInfo.schoolInfo.school &&
           nextUser.fitnessGoals.workoutTime === result.fitnessGoals.workoutTime
-        )
+        ) {
+          result.lastViewedUser = nextUser._id;
           return res.json(nextUser);
+        }
       }
     });
   });
 });
 
+apiRoutes.post('/likeUser', function(req, res) {
+  console.log(req.body);
+  // userId
+  // Find a match and return it
+  let currentUser = User.findOne({name: req.body.name});
+  currentUser.then(function(user) {
+    let userToAdd = new User();
+    userToAdd.id = req.body.matchID;
+    userToAdd.
+    user.matches.accepted.push(userToAdd);
+    user.save(function (err) {
+      if (err)
+        return res.send(err);
 
+      return res.json({success: true, msg: 'user liked' + user});
+    });
+  });
+});
+
+apiRoutes.post('/passUser', function(req, res) {
+  console.log(req.body);
+  // userId
+  // Find a match and return it
+  let currentUser = User.findOne({name: req.body.name});
+  currentUser.then(function(user) {
+    user.matches.passed.push(req.body.matchID);
+    user.save(function (err) {
+      if (err)
+        return res.send(err);
+
+      return res.json({success: true, msg: 'user liked' + user});
+    });
+  });
+});
+
+apiRoutes.post('/dislikeUser', function(req, res) {
+  console.log(req.body);
+  // userId
+  // Find a match and return it
+  let currentUser = User.findOne({name: req.body.name});
+  currentUser.then(function(user) {
+    user.matches.blocked.push(req.body.matchID);
+    user.save(function (err) {
+      if (err)
+        return res.send(err);
+
+      return res.json({success: true, msg: 'user liked' + user});
+    });
+  });
+});
+
+apiRoutes.get('/getMessages', function(req, res) {
+  console.log(req.body);
+  // userId
+  // Find a match and return it
+  currentUser.then(function(user) {
+    return res.json({success: true, data: user.matches.accepted});
+  });
+});
+
+apiRoutes.post('/sendMessage', function(req, res) {
+  console.log(req.body);
+  // userId
+  // Find a match and return it
+  // let currentUser = User.findOne({name: req.body.name});
+  // currentUser.then(function(user) {
+  //   user.matches.blocked.push(req.body.matchID);
+  //   user.save(function (err) {
+  //     if (err)
+  //       return res.send(err);
+  //
+  //     return res.json({success: true, msg: 'user liked' + user});
+  //   });
+  // });
+});
 
 /*TAKE THIS OUT*/
 // Get the list of good matches
