@@ -25,15 +25,9 @@ app.use(morgan('dev'));
 // Use the passport package in our application
 app.use(passport.initialize());
 
-// Setup for image uploads
-// app.use(multer({ dest: './data/img/',
-//   rename: function (fieldname, filename) {
-//     return filename;
-//   }
-// }));
-
+// Setup photo upload
 app.use(multer({dest:'./data/img/'}).single('photo'));
-// var upload = multer({dest:'./data/img/'});
+
 // to fix cors issue
 app.use(cors());
 /////////////
@@ -50,14 +44,14 @@ mongoose.connect(config.database);
 require('./config/passport')(passport);
  
 // bundle our routes
-var apiRoutes = express.Router();
+let apiRoutes = express.Router();
  
 // create a new user account (POST http://localhost:8080/api/signup)
 apiRoutes.post('/signup', function(req, res) {
   if (!req.body.name || !req.body.password) {
-    res.json({success: false, msg: 'Please pass name and password.'});
+    return res.json({success: false, msg: 'Please pass name and password.'});
   } else {
-    var newUser = new User({
+    let newUser = new User({
       name: req.body.name,
       password: req.body.password
     });
@@ -70,7 +64,7 @@ apiRoutes.post('/signup', function(req, res) {
         if (err) {
           return res.json({success: false, msg: 'Username already exists.'});
         }
-        res.json({success: true, msg: 'Successful created new user.'});
+        return res.json({success: true, msg: 'Successful created new user.'});
       });
     });
   }
@@ -78,9 +72,10 @@ apiRoutes.post('/signup', function(req, res) {
 
 // update user info (upon user creation). Change later to look for user token
 apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), function(req, res) {
-  var token = getToken(req.headers);
+  console.log("TEST");
+  let token = getToken(req.headers);
   if (token) {
-    var decoded = jwt.decode(token, config.secret);
+    let decoded = jwt.decode(token, config.secret);
     User.findOne({
       name: decoded.name
     }, function(err, user) {
@@ -89,7 +84,6 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
       if (!user) {
         return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
       } else {
-        // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
         if (req.body.firstName != null)
           user.userInfo.firstName = req.body.firstName;
         if (req.body.lastName != null)
@@ -106,7 +100,6 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
           user.userInfo.age = req.body.age;
         if (req.body.school != null)
           user.userInfo.schoolInfo.school = req.body.school;
-        // user.userInfo.schoolInfo.grade = req.body.grade;
 
         if (req.body.personalGoal != null)
           user.fitnessGoals.personal = req.body.personalGoal;
@@ -119,9 +112,6 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
         if (req.body.genderPreference != null)
           user.fitnessGoals.genderPreference = req.body.genderPreference;
 
-        console.log("ORIGINAL: " + req.body + " 1: " + req.body.workoutTime + " 2: " + req.body.genderPreference);
-        console.log("MYUSER: " + user);
-        // user.save();
         user.save(function(err) {
           if (err)
             return res.send(err);
@@ -135,11 +125,12 @@ apiRoutes.put('/accountInfo', passport.authenticate('jwt', { session: false}), f
   }
 });
 
-/*// Handle image uploads
+// Handle image uploads
 apiRoutes.put('/setphoto', passport.authenticate('jwt', { session: false}), function(req, res) {
-  var token = getToken(req.headers);
+  console.log(req.file);
+  let token = getToken(req.headers);
   if (token) {
-    var decoded = jwt.decode(token, config.secret);
+    let decoded = jwt.decode(token, config.secret);
     User.findOne({
       name: decoded.name
     }, function(err, user) {
@@ -149,40 +140,7 @@ apiRoutes.put('/setphoto', passport.authenticate('jwt', { session: false}), func
         return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
       } else {
         // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
-        if (req.body.photo != null) {
-          user.userInfo.photos = fs.readFileSync(req.files.userPhoto.path);
-          user.userInfo.photos.contentType = 'image/jpg';
-
-        // user.save();
-        user.save(function(err) {
-          if (err)
-            return res.send(err);
-
-          return res.json({success: true, msg: 'image update succesfull' + user});
-        });
-      }
-    });
-  } else {
-    return res.status(403).send({success: false, msg: 'No token provided.'});
-  }
-});*/
-// Handle image uploads
-apiRoutes.put('/setphoto', function(req, res) {
-  // console.log(req.body);
-  //
-  console.log(req.file);
-
-  User.findOne({
-    name: req.body.name
-  }, function (err, user) {
-    // console.log(user);
-    if (err) throw err;
-
-    if (!user) {
-      return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-    } else {
-      // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
-      // if (req.body.photo != null) {
+        // if (req.body.photo != null) {
         user.userInfo.photos.data = fs.readFileSync(req.file.path);
         user.userInfo.photos.contentType = 'image/jpg';
 
@@ -194,9 +152,12 @@ apiRoutes.put('/setphoto', function(req, res) {
 
           return res.json({success: true, msg: 'image update succesfull' + user});
         });
-      // }
-    }
-  });
+        // }
+      }
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'No token provided.'});
+  }
 });
 
 
@@ -212,11 +173,12 @@ apiRoutes.post('/authenticate', function(req, res) {
     } else {
       // check if password matches
       user.comparePassword(req.body.password, function (err, isMatch) {
+        console.log("isMatch: " + isMatch);
         if (isMatch && !err) {
           // if user is found and password is right create a token
-          var token = jwt.encode(user, config.secret);
+          let token = jwt.encode(user, config.secret);
           // return the information including token as JSON
-          res.json({success: true, token: 'JWT ' + token});
+          return res.json({success: true, token: 'JWT ' + token});
         } else {
           res.send({success: false, msg: 'Authentication failed. Wrong password.'});
         }
@@ -394,19 +356,6 @@ apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), fu
 
       if (!user) {
         return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-      } else {
-        // Get the match list and return it to the user
-        // User.find({
-        //   "$and": [
-        //     "name": {"$ne": user.name},
-        //     "fitnessGoals.genderPreference": user.genderPreference,
-        //     "schoolInfo.school": user.schoolInfo.school,
-        //     "fitnessGoals.workoutTime": user.fitnessGoals.workoutTime
-        //   ]
-        // }, function (err, response) {
-        //   if (err) throw err;
-        //   else res.json({success: true, msg:response})
-        // });
         res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
       }
     });

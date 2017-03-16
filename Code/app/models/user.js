@@ -1,11 +1,11 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
-var bcrypt = require('bcryptjs');
+let mongoose = require('mongoose');
+let Schema = mongoose.Schema;
+let bcrypt = require('bcryptjs');
  
 // Thanks to http://blog.matoski.com/articles/jwt-express-node-mongoose/
  
 // set up a mongoose model
-var UserSchema = new Schema({
+let UserSchema = new Schema({
   name: {
       type: String,
       unique: true,
@@ -77,7 +77,7 @@ var UserSchema = new Schema({
       messages : [{
         conversationID : Schema.Types.ObjectId,
         author: String,
-        body: String
+        bodydd: String
       }]
     }],
     passed: [{
@@ -90,7 +90,7 @@ var UserSchema = new Schema({
 });
 
 UserSchema.pre('save', function (next) {
-  var user = this;
+  let user = this;
   if (this.isModified('password') || this.isNew) {
     bcrypt.genSalt(10, function (err, salt) {
       if (err) {
@@ -119,7 +119,7 @@ UserSchema.methods.comparePassword = function (passw, cb) {
 };
 
 UserSchema.statics.getFirstEntry = function(cb) {
-  var model = this.model("User");
+  let model = this.model("User");
   model.findOne({}, {"_id" : 1}).exec(function(err, user) {
     if (err) return cb(err);
     // console.log("FIRST:" + user);
