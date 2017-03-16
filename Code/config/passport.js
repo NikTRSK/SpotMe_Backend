@@ -3,8 +3,9 @@ ExtractJwt = require('passport-jwt').ExtractJwt; // Surprise surprise an update 
  
 // load up the user model
 let User = require('../app/models/user');
-let config = require('../config/database'); // get db config file
- 
+// let config = require('../config/database'); // get db config file
+let config = require('config'); // get db config file
+
 module.exports = function(passport) {
   let opts = {};
   opts.jwtFromRequest = ExtractJwt.fromAuthHeader(); // Surprise surprise an update broke Auth. Added this.

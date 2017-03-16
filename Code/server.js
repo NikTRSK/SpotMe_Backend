@@ -4,7 +4,8 @@ let bodyParser  = require('body-parser');
 let morgan      = require('morgan');
 let mongoose    = require('mongoose');
 let passport  = require('passport');
-let config      = require('./config/database'); // get db config file
+// let config      = require('./config/database'); // get db config file
+let config      = require('config');
 let User        = require('./app/models/user'); // get the mongoose model
 let port        = process.env.PORT || 8080;
 let jwt         = require('jwt-simple');
@@ -15,12 +16,26 @@ let fs = require('fs');
 let multer = require('multer');
 let co = require('co');
 
+//db connection
+let options = {
+  server: { socketOptions: { keepAlive: 1, connectTimeoutMS: 30000 } },
+  replset: { socketOptions: { keepAlive: 1, connectTimeoutMS : 30000 } }
+};
+mongoose.connect(config.DBHost, options);
+let db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+
 // get our request parameters
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
- 
-// log to console
-app.use(morgan('dev'));
+
+//don't show the log when it is test
+if(config.util.getEnv('NODE_ENV') !== 'test') {
+  //use morgan to log at command line
+  app.use(morgan('combined')); //'combined' outputs the Apache style LOGs
+}
+// // log to console
+// app.use(morgan('dev'));
  
 // Use the passport package in our application
 app.use(passport.initialize());
@@ -38,7 +53,7 @@ app.get('/', function(req, res) {
 });
 //-------------------------------------------------------------------//
 // connect to database
-mongoose.connect(config.database);
+// mongoose.connect(config.database);
  
 // pass passport for configuration
 require('./config/passport')(passport);
@@ -189,9 +204,9 @@ apiRoutes.post('/authenticate', function(req, res) {
 
 // route to a restricted info (GET http://localhost:8080/api/memberinfo)
 apiRoutes.get('/memberinfo', passport.authenticate('jwt', { session: false}), function(req, res) {
-  var token = getToken(req.headers);
+  let token = getToken(req.headers);
   if (token) {
-    var decoded = jwt.decode(token, config.secret);
+    let decoded = jwt.decode(token, config.secret);
     User.findOne({
       name: decoded.name
     }, function(err, user) {
@@ -356,7 +371,7 @@ apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), fu
 
       if (!user) {
         return res.status(403).send({success: false, msg: 'Authentication failed. User not found.'});
-        res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
+        // res.json({success: true, msg: 'Welcome in the member area ' + user.name + '!'});
       }
     });
   } else {
@@ -366,7 +381,7 @@ apiRoutes.get('/getMatches', passport.authenticate('jwt', { session: false}), fu
 
 getToken = function (headers) {
   if (headers && headers.authorization) {
-    var parted = headers.authorization.split(' ');
+    let parted = headers.authorization.split(' ');
     if (parted.length === 2) {
       return parted[1];
     } else {
@@ -391,3 +406,5 @@ app.use('/api', apiRoutes);
 // Start the server
 app.listen(port);
 console.log('There will be dragons: http://localhost:' + port);
+
+module.exports = app; // for testing
